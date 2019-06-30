@@ -1238,7 +1238,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2)) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((unsigned int)iAFR << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
