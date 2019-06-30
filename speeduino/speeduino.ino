@@ -1248,8 +1248,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   if ( configPage2.multiplyMAP == true ) {
     iMAP = ((unsigned int)MAP << 7) / currentStatus.baro;  //Include multiply MAP (vs baro) if enabled
   }
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) ) {
+    iAFR = ((unsigned int)iAFR << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   iCorrections = (corrections << 7) / 100;
 
@@ -1258,7 +1258,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, int corrections, int injOpen)
   if ( configPage2.multiplyMAP == true ) {
     intermediate = (intermediate * (unsigned long)iMAP) >> 7;
   }
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
