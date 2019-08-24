@@ -16,7 +16,13 @@
   //#define TIMER5_MICROS
 
 #elif defined(CORE_TEENSY)
-  #define BOARD_H "board_teensy35.h"
+  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    #define CORE_TEENSY35
+    #define BOARD_H "board_teensy35.h"
+  #elif defined(__IMXRT1062__)
+    #define CORE_TEENSY40
+    #define BOARD_H "board_teensy40.h"
+  #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
 
@@ -61,8 +67,8 @@
   #else //libmaple core aka STM32DUINO
     //These are defined in STM32F1/variants/generic_stm32f103c/variant.h but return a non byte* value
     #ifndef portOutputRegister
-      #define portOutputRegister(port) (volatile byte *)( &(port->regs->ODR) )
-      #define portInputRegister(port) (volatile byte *)( &(port->regs->IDR) )
+      #define portOutputRegister(port) ((volatile byte *)( &((port)->regs->ODR) ))
+      #define portInputRegister(port) ((volatile byte *)( &((port)->regs->IDR) ))
     #endif
   #endif
 #elif defined(__SAMD21G18A__)
@@ -76,11 +82,11 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 //Handy bitsetting macros
-#define BIT_SET(a,b) ((a) |= (1<<(b)))
-#define BIT_CLEAR(a,b) ((a) &= ~(1<<(b)))
-#define BIT_CHECK(var,pos) !!((var) & (1<<(pos)))
+#define BIT_SET(a,b) ((a) |= (1U<<(b)))
+#define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
+#define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 
-#define interruptSafe(c)  noInterrupts(); c interrupts(); //Wraps any code between nointerrupt and interrupt calls
+#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
@@ -137,7 +143,7 @@
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_UNUSED2       2
+#define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_UNUSED3       3
 #define BIT_STATUS3_UNUSED4       4
 #define BIT_STATUS3_NSQUIRTS1     5
@@ -205,7 +211,13 @@
 #define FUEL2_MODE_OFF      0
 #define FUEL2_MODE_MULTIPLY 1
 #define FUEL2_MODE_ADD      2
-#define FUEL2_MODE_SWITCH   3
+#define FUEL2_MODE_CONDITIONAL_SWITCH   3
+#define FUEL2_MODE_INPUT_SWITCH 4
+
+#define FUEL2_CONDITION_RPM 0
+#define FUEL2_CONDITION_MAP 1
+#define FUEL2_CONDITION_TPS 2
+#define FUEL2_CONDITION_ETH 3
 
 #define RESET_CONTROL_DISABLED             0
 #define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
@@ -214,6 +226,13 @@
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
+
+
+#define VVT_MODE_ONOFF      0
+#define VVT_MODE_OPEN_LOOP  1
+#define VVT_MODE_CLOSED_LOOP 2
+#define VVT_LOAD_MAP      0
+#define VVT_LOAD_TPS      1
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -411,7 +430,7 @@ struct statuses {
   volatile byte status1;
   volatile byte spark;
   volatile byte spark2;
-  byte engine;
+  uint8_t engine;
   unsigned int PW1; //In uS
   unsigned int PW2; //In uS
   unsigned int PW3; //In uS
@@ -451,6 +470,10 @@ struct statuses {
   bool knockActive;
   bool toothLogEnabled;
   bool compositeLogEnabled;
+  //int8_t vvtAngle;
+  long vvtAngle;
+  byte vvtTargetAngle;
+  byte vvtDuty;
 
 };
 struct statuses currentStatus; //The global status object
@@ -519,7 +542,7 @@ struct config2 {
   //config3 in ini
   byte engineType : 1;
   byte flexEnabled : 1;
-  byte unused2_38c : 1; //"Speed Density", "Alpha-N"
+  byte legacyMAP  : 1;
   byte baroCorr : 1;
   byte injLayout : 2;
   byte perToothIgn : 1;
@@ -646,7 +669,8 @@ struct config4 {
   byte maeBins[4]; /**< MAP based AE MAPdot bins */
   byte maeRates[4]; /**< MAP based AE values */
 
-  byte unused2_91[37];
+  int8_t batVoltCorrect; /**< Battery voltage calibration offset */
+  byte unused2_91[36];
 
 #if defined(CORE_AVR)
   };
@@ -669,7 +693,12 @@ struct config6 {
   byte egoKD;
   byte egoTemp; //The temperature above which closed loop functions
   byte egoCount; //The number of ignition cylces per step
-  byte unused6_6;
+  byte vvtMode : 2; //Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
+  byte vvtLoadSource : 2; //Load source for VVT (TPS or MAP)
+  byte vvtCLDir : 1; //VVT direction (advance or retard)
+  byte vvtCLUseHold : 1; //Whether or not to use a hold duty cycle (Most cases are Yes)
+  byte vvtCLAlterFuelTiming : 1;
+  byte unused6_6 : 1;
   byte egoLimit; //Maximum amount the closed loop will vary the fueling
   byte ego_min; //AFR must be above this for closed loop to function
   byte ego_max; //AFR must be below this for closed loop to function
@@ -915,10 +944,23 @@ struct config10 {
 
   //Byte 122
   byte fuel2Algorithm : 3;
-  byte fuel2Mode : 2;
-  byte unused10_122 : 3;
+  byte fuel2Mode : 3;
+  byte fuel2SwitchVariable : 2;
+  uint16_t fuel2SwitchValue;
 
-  byte unused11_123_191[69];
+  //Byte 123
+  byte fuel2InputPin : 6;
+  byte fuel2InputPolarity : 1;
+  byte fuel2InputPullup : 1;
+
+  byte vvtCLholdDuty;
+  byte vvtCLKP;
+  byte vvtCLKI;
+  byte vvtCLKD;
+  uint16_t vvtCLMinAng;
+  uint16_t vvtCLMaxAng;
+
+  byte unused11_123_191[58];
 
 #if defined(CORE_AVR)
   };
@@ -960,6 +1002,7 @@ byte pinFuelPump; //Fuel pump on/off
 byte pinIdle1; //Single wire idle control
 byte pinIdle2; //2 wire idle control (Not currently used)
 byte pinIdleUp; //Input for triggering Idle Up
+byte pinFuel2Input; //Input for switching to the 2nd fuel table
 byte pinSpareTemp1; // Future use only
 byte pinSpareTemp2; // Future use only
 byte pinSpareOut1; //Generic output

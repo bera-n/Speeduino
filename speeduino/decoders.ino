@@ -232,8 +232,8 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
     } \
     else if ( (currentTooth == ignition4EndTooth) ) \
     { \
-      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE_SLOW( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; } \
+      if( (ignitionSchedule4.Status == RUNNING) ) { IGN4_COMPARE = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); } \
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; } \
     } \
   } \
 }
@@ -965,21 +965,6 @@ void triggerSetup_4G63()
 
     triggerActualTeeth = 8;
   }
-  /*
-   * forums.libreems.org/attachment.php?aid=34
-  toothAngles[0] = 715; //Falling edge of tooth #1
-  toothAngles[1] = 49;  //Falling edge of wide cam
-  toothAngles[2] = 105; //Rising edge of tooth #2
-  toothAngles[3] = 175; //Falling edge of tooth #2
-  toothAngles[4] = 229; //Rising edge of narrow cam tooth (??)
-  toothAngles[5] = 285; //Rising edge of tooth #3
-  toothAngles[6] = 319; //Falling edge of narrow cam tooth
-  toothAngles[7] = 355; //falling edge of tooth #3
-  toothAngles[8] = 465; //Rising edge of tooth #4
-  toothAngles[9] = 535; //Falling edge of tooth #4
-  toothAngles[10] = 535; //Rising edge of wide cam tooth
-  toothAngles[11] = 645; //Rising edge of tooth #1
-   */
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -1956,6 +1941,12 @@ void triggerSec_Miata9905()
     secondaryToothCount++;
 
     //TODO Add some secondary filtering here
+
+    //Record the VVT tooth time
+    if( (toothCurrentCount == 1) && (curTime2 > toothLastToothTime) )
+    {
+      lastVVTtime = curTime2 - toothLastToothTime;
+    }
   }
 }
 
@@ -2018,6 +2009,15 @@ int getCrankAngle_Miata9905()
     }
 
     return crankAngle;
+}
+
+int getCamAngle_Miata9905()
+{
+  //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
+  //All cam angles in in BTDC, so the actual advance angle is 370 - fastTimeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
+  currentStatus.vvtAngle = 370 - fastTimeToAngle(lastVVTtime) - configPage10.vvtCLMinAng;
+
+  return currentStatus.vvtAngle;
 }
 
 void triggerSetEndTeeth_Miata9905()
