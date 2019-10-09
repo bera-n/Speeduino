@@ -160,7 +160,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPM > configPage2.instMapRpm * 100 ) && (currentStatus.hasSync == true) ) //If the engine is below the map sample rpm (or isn't running), fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -230,7 +230,7 @@ static inline void readMAP()
 
     case 2:
       //Minimum reading in a cycle
-      if (currentStatus.RPM > 0 ) //If the engine isn't running, fall back to instantaneous reads
+      if (currentStatus.RPM > configPage2.instMapRpm * 100 ) //If the engine is below the map sample rpm threshold (or isn't running), fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {

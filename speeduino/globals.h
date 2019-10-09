@@ -487,7 +487,7 @@ struct statuses currentStatus; //The global status object
  */
 struct config2 {
 
-  byte unused2_0;
+  byte instMapRpm; //0 Map sample rpm threshold  (rpm/100)
   byte unused2_1;
   byte unused2_2;  //Was ASE
   byte aeMode : 2; /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
