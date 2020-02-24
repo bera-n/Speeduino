@@ -410,7 +410,7 @@ byte correctionLaunch()
 bool correctionDFCO()
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
+  if ( (configPage2.dfcoEnabled == 1) && ( currentStatus.RPM < 5000 ) )
   {
     if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
     else { DFCOValue = ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); }
