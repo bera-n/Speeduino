@@ -160,7 +160,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPM > 2000) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -225,7 +225,12 @@ static inline void readMAP()
           MAPcount = 0;
         }
       }
-      else {  instanteneousMAPReading(); }
+      else {  instanteneousMAPReading();
+              MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count and mapvalues if we go back over 2000
+              MAPrunningValue = 0;
+              EMAPrunningValue = 0; //Can reset this even if EMAP not used
+              MAPcount = 0;
+              }
       break;
 
     case 2:
@@ -268,7 +273,7 @@ static inline void readMAP()
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPM > 2000) && (currentStatus.hasSync == true) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
@@ -309,7 +314,11 @@ static inline void readMAP()
           MAPcount = 0;
         }
       }
-      else { instanteneousMAPReading(); }
+      else { instanteneousMAPReading();
+             MAPcurRev = ignitionCount; //Reset the current event count and mapvalues if we go back over 2000
+             MAPrunningValue = 0;
+             MAPcount = 0;
+            }
 
 
     default:
