@@ -471,7 +471,7 @@ byte correctionAFRClosedLoop()
         {
           //*************************************************************************************************************************************
           //Simple algorithm
-          if(currentStatus.O2 > currentStatus.afrTarget)
+          if( (currentStatus.O2 - 1) > currentStatus.afrTarget) //bera-n: -1 to get some hysterresis
           {
             //Running lean
             if(currentStatus.egoCorrection < (100 + configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
@@ -480,7 +480,7 @@ byte correctionAFRClosedLoop()
             }
             else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
           }
-          else if(currentStatus.O2 < currentStatus.afrTarget)
+          else if( (currentStatus.O2 +1 ) < currentStatus.afrTarget) //bera-n: +1 to get some hysterresis
           {
             //Running Rich
             if(currentStatus.egoCorrection > (100 - configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
