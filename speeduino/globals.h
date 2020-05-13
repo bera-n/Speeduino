@@ -472,7 +472,7 @@ struct statuses {
   bool CTPSActive; /**< Whether the externally controlled closed throttle position sensor is currently active */
   bool fanOn; /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
-  volatile byte ethanolPct_fuel; /** Ethanol pct used to calculate fueling, normally == ethanolPct. May use a fallback value if sensor reads outside limits */
+  volatile byte ethanolPctFuel; /** Ethanol pct used to calculate fueling, normally == ethanolPct. May use a fallback value if sensor reads outside limits */
   unsigned long AEEndTime; /**< The target end time used whenever AE is turned on */
   volatile byte status1;
   volatile byte spark;

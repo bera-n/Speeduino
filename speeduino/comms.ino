@@ -647,8 +647,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   fullStatus[98] = currentStatus.baroCorrection;
   fullStatus[99] = currentStatus.VE; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
   fullStatus[100] = currentStatus.ASEValue; //Current ASE (%)
-  fullStatus[101] = currentStatus.vss;
-  fullStatus[102] = currentStatus.ethanolPct_fuel; //Ethanol % for fuelling purposes (or 0 if not used)
+  fullStatus[101] = lowByte(currentStatus.vss);
+  fullStatus[102] = highByte(currentStatus.vss);
+  fullStatus[103] = currentStatus.ethanolPctFuel; //Ethanol % for fuelling purposes (or 0 if not used)
 
   for(byte x=0; x<packetLength; x++)
   {
