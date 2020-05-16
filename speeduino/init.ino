@@ -265,8 +265,9 @@ void initialiseAll()
     //Check whether the flex sensor is enabled and if so, attach an interupt for it
     if(configPage2.flexEnabled > 0)
     {
-    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
-    currentStatus.ethanolPct = 0;
+      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, RISING);
+      currentStatus.ethanolPct = 0;
+      currentStatus.ethanolPctFuel = configPage10.flexFallbackPct; // set to default fallback value
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
